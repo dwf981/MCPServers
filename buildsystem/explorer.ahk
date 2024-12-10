@@ -24,6 +24,7 @@
     AddMenu( "ProjectMenu" )
     AddMenu( "ProjectMenu", "&GitHub Server...`tG", "OnGitHubServer", ResDir "github.ico" )
     AddMenu( "ProjectMenu", "RE&ADME.md...`tA", "OnGitHubReadme", BrowserPath )
+    AddMenu( "ProjectMenu", "Ge&nerate Claude Config...`tN", "OnGenerateClaudeConfig", ComSpec )
     AddMenu( "ProjectMenu" )
     AddMenu( "ProjectMenu", "&Sync with Upstream`tS", "OnSyncWithUpstream", ConEmuPath )
     AddMenu( "ProjectMenu" )
@@ -42,8 +43,6 @@ OnSyncWithUpstream:
 return
 
 OnGitHubServer:
-    Subcommand := GetKeyState("Shift","P") ? "chat" : "code"
-    ProjectDir := GetProjectDir()
     SplitPath, A_LineFile,, GitRootDir
     SplitPath, GitRootDir,, GitRootDir
     ShiftPressed := GetKeyState("Shift","P")
@@ -77,4 +76,47 @@ OnGitHubReadme:
     SplitPath, A_LineFile,, GitRootDir
     SplitPath, GitRootDir,, GitRootDir
     Try Run chrome.exe "%GitRootDir%\src\github\README.md",, Max
+return
+
+OnGenerateClaudeConfig:
+    SplitPath, A_LineFile,, GitRootDir
+    SplitPath, GitRootDir,, GitRootDir
+    ShiftPressed := GetKeyState("Shift","P")
+    BatchScript =
+    (
+
+        set "DEST_JSON=!APPDATA!\Claude\claude_desktop_config.json"
+        if "%ShiftPressed%" equ "1" `(
+            echo Removing !yellow!!DEST_JSON!!nc! ...
+            if exist "!DEST_JSON!" del "!DEST_JSON!"
+            echo.
+        `)
+        if exist "!DEST_JSON!" `(
+            echo !yellow!!DEST_JSON!!nc! already exists.
+            echo.
+            type "!DEST_JSON!"
+        `) else `(
+            if not defined GITHUB_PERSONAL_ACCESS_TOKEN call :ReadPassword "Enter GITHUB_PERSONAL_ACCESS_TOKEN" GITHUB_PERSONAL_ACCESS_TOKEN
+            if not defined GITHUB_PERSONAL_ACCESS_TOKEN goto :error
+            set "TEMP_JSON=!TEMP!\config_!RANDOM!.json"
+            `(
+            echo {
+            echo   "mcpServers": {
+            echo     "github": {
+            echo       "command": "node",
+            echo       "args": ["C:\\src\\dwf981@gh\\MCPServers\\src\\github\\dist\\index.js"],
+            echo       "env": {
+            echo         "GITHUB_PERSONAL_ACCESS_TOKEN": "!GITHUB_PERSONAL_ACCESS_TOKEN!"
+            echo       }
+            echo     }
+            echo   }
+            echo }
+            `) > "!TEMP_JSON!"
+            jq "." "!TEMP_JSON!" > "!DEST_JSON!"
+            del "!TEMP_JSON!"
+            echo JSON file generated successfully as !yellow!!DEST_JSON!!nc!
+        `)
+        echo.
+    )
+    RunBat({ Visible: "cmd", Pause: true, Admin: false, UseReadPassword: true, Colors: true }, StripBat(BatchScript))
 return
