@@ -203,14 +203,18 @@ async function getFileContents(
     throw new Error(`GitHub API error: ${response.statusText}`);
   }
 
-  const data = GitHubContentSchema.parse(await response.json());
-
-  // If it's a file, decode the content
-  if (!Array.isArray(data) && data.content) {
-    data.content = Buffer.from(data.content, "base64").toString("utf8");
+  const data = await response.json();
+  
+  // Handle both single file and directory responses
+  if (Array.isArray(data)) {
+    return GitHubContentSchema.parse(data);
+  } else {
+    const parsedData = GitHubContentSchema.parse(data);
+    if ('content' in parsedData && parsedData.content) {
+      parsedData.content = Buffer.from(parsedData.content, 'base64').toString('utf8');
+    }
+    return parsedData;
   }
-
-  return data;
 }
 
 async function createIssue(

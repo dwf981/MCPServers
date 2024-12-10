@@ -41,16 +41,16 @@ export const GitHubRepositorySchema = z.object({
 // File content schemas
 export const GitHubFileContentSchema = z.object({
   type: z.string(),
-  encoding: z.string(),
+  encoding: z.string().optional(),
   size: z.number(),
   name: z.string(),
   path: z.string(),
-  content: z.string(),
+  content: z.string().optional(),
   sha: z.string(),
   url: z.string(),
   git_url: z.string(),
   html_url: z.string(),
-  download_url: z.string(),
+  download_url: z.string().nullable(),
 });
 
 export const GitHubDirectoryContentSchema = z.object({
