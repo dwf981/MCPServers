@@ -683,6 +683,34 @@ export const GetIssueSchema = z.object({
   issue_number: z.number().describe("Issue number")
 });
 
+// Add after ListIssuesOptionsSchema
+export const ListRepositoryIssuesSchema = z.object({
+  owner: z.string().describe("Repository owner (username or organization)"),
+  repo: z.string().describe("Repository name"),
+  state: z.enum(['open', 'closed', 'all']).optional().describe("State of issues to return"),
+  sort: z.enum(['created', 'updated', 'comments']).optional().describe("What to sort results by"),
+  direction: z.enum(['asc', 'desc']).optional().describe("The direction of the sort"),
+  per_page: z.number().optional().describe("Results per page (max 100)"),
+  page: z.number().optional().describe("Page number of the results")
+});
+
+// Add after GitHubPullRequestSchema
+export const MergePullRequestOptionsSchema = z.object({
+  owner: z.string().describe("Repository owner (username or organization)"),
+  repo: z.string().describe("Repository name"),
+  pull_number: z.number().describe("The number of the pull request"),
+  commit_title: z.string().optional().describe("Title for the automatic commit message"),
+  commit_message: z.string().optional().describe("Extra detail to append to automatic commit message"),
+  merge_method: z.enum(['merge', 'squash', 'rebase']).optional().describe("Merge method to use"),
+  sha: z.string().optional().describe("SHA that pull request head must match to allow merge")
+});
+
+export const MergeResultSchema = z.object({
+  sha: z.string(),
+  merged: z.boolean(),
+  message: z.string()
+});
+
 // Export types
 export type GitHubAuthor = z.infer<typeof GitHubAuthorSchema>;
 export type GitHubFork = z.infer<typeof GitHubForkSchema>;

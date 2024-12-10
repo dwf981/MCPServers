@@ -188,6 +188,30 @@ MCP Server for the GitHub API, enabling file operations, repository management, 
      - `issue_number` (number): Issue number to retrieve
    - Returns: Github Issue object & details
 
+18. `list_repository_issues`
+    - List issues in a GitHub repository with optional filters
+    - Inputs:
+      - `owner` (string): Repository owner
+      - `repo` (string): Repository name
+      - `state` (optional string): Filter by state ('open', 'closed', 'all')
+      - `sort` (optional string): Sort by ('created', 'updated', 'comments')
+      - `direction` (optional string): Sort direction ('asc', 'desc')
+      - `per_page` (optional number): Results per page (max 100)
+      - `page` (optional number): Page number
+    - Returns: Array of issue details
+
+19. `merge_pull_request`
+    - Merge a pull request
+    - Inputs:
+      - `owner` (string): Repository owner
+      - `repo` (string): Repository name
+      - `pull_number` (number): Pull request number to merge
+      - `commit_title` (optional string): Title for the merge commit
+      - `commit_message` (optional string): Additional commit message
+      - `merge_method` (optional string): Merge method ('merge', 'squash', 'rebase')
+      - `sha` (optional string): SHA that pull request head must match
+    - Returns: Merge result with SHA and status
+
 ## Search Query Syntax
 
 ### Code Search

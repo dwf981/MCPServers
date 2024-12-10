@@ -58,7 +58,10 @@ import {
   type GitHubTree,
   type SearchCodeResponse,
   type SearchIssuesResponse,
-  type SearchUsersResponse
+  type SearchUsersResponse,
+  ListRepositoryIssuesSchema,
+  MergePullRequestOptionsSchema,
+  MergeResultSchema,
 } from './schemas.js';
 
 const server = new Server(
@@ -715,6 +718,66 @@ async function getIssue(
   return GitHubIssueSchema.parse(await response.json());
 }
 
+async function listRepositoryIssues(
+  owner: string,
+  repo: string,
+  options: Omit<z.infer<typeof ListRepositoryIssuesSchema>, 'owner' | 'repo'>
+): Promise<GitHubIssue[]> {
+  const url = new URL(`https://api.github.com/repos/${owner}/${repo}/issues`);
+  
+  if (options.state) url.searchParams.append('state', options.state);
+  if (options.sort) url.searchParams.append('sort', options.sort);
+  if (options.direction) url.searchParams.append('direction', options.direction);
+  if (options.per_page) url.searchParams.append('per_page', options.per_page.toString());
+  if (options.page) url.searchParams.append('page', options.page.toString());
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Authorization: `token ${GITHUB_PERSONAL_ACCESS_TOKEN}`,
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "github-mcp-server",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub API error: ${response.statusText}`);
+  }
+
+  return z.array(GitHubIssueSchema).parse(await response.json());
+}
+
+async function mergePullRequest(
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  options: Omit<z.infer<typeof MergePullRequestOptionsSchema>, 'owner' | 'repo' | 'pull_number'>
+): Promise<z.infer<typeof MergeResultSchema>> {
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}/merge`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `token ${GITHUB_PERSONAL_ACCESS_TOKEN}`,
+        Accept: "application/vnd.github.v3+json",
+        "User-Agent": "github-mcp-server",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        commit_title: options.commit_title,
+        commit_message: options.commit_message,
+        merge_method: options.merge_method,
+        sha: options.sha,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`GitHub API error: ${response.statusText}`);
+  }
+
+  return MergeResultSchema.parse(await response.json());
+}
+
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
@@ -806,7 +869,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: "get_issue",
         description: "Get details of a specific issue in a GitHub repository.",
         inputSchema: zodToJsonSchema(GetIssueSchema)
-      }
+      },
+      {
+        name: "list_repository_issues",
+        description: "List issues in a GitHub repository with optional filters",
+        inputSchema: zodToJsonSchema(ListRepositoryIssuesSchema),
+      },
+      {
+        name: "merge_pull_request",
+        description: "Merge a pull request",
+        inputSchema: zodToJsonSchema(MergePullRequestOptionsSchema),
+      },
     ],
   };
 });
@@ -1009,6 +1082,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }).parse(request.params.arguments);
         const issue = await getIssue(args.owner, args.repo, args.issue_number);
         return { toolResult: issue };
+      }
+
+      case "list_repository_issues": {
+        const args = ListRepositoryIssuesSchema.parse(request.params.arguments);
+        const { owner, repo, ...options } = args;
+        const issues = await listRepositoryIssues(owner, repo, options);
+        return { content: [{ type: "text", text: JSON.stringify(issues, null, 2) }] };
+      }
+
+      case "merge_pull_request": {
+        const args = MergePullRequestOptionsSchema.parse(request.params.arguments);
+        const { owner, repo, pull_number, ...options } = args;
+        const result = await mergePullRequest(owner, repo, pull_number, options);
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
 
       default:
