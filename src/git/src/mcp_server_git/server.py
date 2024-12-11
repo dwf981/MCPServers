@@ -52,6 +52,21 @@ class GitCheckout(BaseModel):
     repo_path: str
     branch_name: str
 
+class GitPush(BaseModel):
+    repo_path: str
+    remote: str = "origin"
+    branch: str | None = None
+
+class GitPull(BaseModel):
+    repo_path: str
+    remote: str = "origin"
+    branch: str | None = None
+
+class GitFetch(BaseModel):
+    repo_path: str
+    remote: str = "origin"
+    branch: str | None = None
+
 class GitTools(str, Enum):
     STATUS = "git_status"
     DIFF_UNSTAGED = "git_diff_unstaged"
@@ -63,6 +78,9 @@ class GitTools(str, Enum):
     LOG = "git_log"
     CREATE_BRANCH = "git_create_branch"
     CHECKOUT = "git_checkout"
+    PUSH = "git_push"
+    PULL = "git_pull"
+    FETCH = "git_fetch"
 
 def git_status(repo: git.Repo) -> str:
     return repo.git.status()
@@ -112,6 +130,22 @@ def git_create_branch(repo: git.Repo, branch_name: str, base_branch: str | None 
 def git_checkout(repo: git.Repo, branch_name: str) -> str:
     repo.git.checkout(branch_name)
     return f"Switched to branch '{branch_name}'"
+
+def git_push(repo: git.Repo, remote: str = "origin", branch: str | None = None) -> str:
+    remote_obj = repo.remote(remote)
+    refspec = f"{branch}:{branch}" if branch else None
+    push_info = remote_obj.push(refspec=refspec)
+    return f"Push to {remote} successful"
+
+def git_pull(repo: git.Repo, remote: str = "origin", branch: str | None = None) -> str:
+    remote_obj = repo.remote(remote)
+    remote_obj.pull(refspec=branch)
+    return f"Pull from {remote} successful"
+
+def git_fetch(repo: git.Repo, remote: str = "origin", branch: str | None = None) -> str:
+    remote_obj = repo.remote(remote)
+    remote_obj.fetch(refspec=branch)
+    return f"Fetch from {remote} successful"
 
 async def serve(repository: Path | None) -> None:
     logger = logging.getLogger(__name__)
@@ -178,6 +212,21 @@ async def serve(repository: Path | None) -> None:
                 name=GitTools.CHECKOUT,
                 description="Switches branches",
                 inputSchema=GitCheckout.schema(),
+            ),
+            Tool(
+                name=GitTools.PUSH,
+                description="Pushes changes to a remote repository",
+                inputSchema=GitPush.schema(),
+            ),
+            Tool(
+                name=GitTools.PULL,
+                description="Pulls changes from a remote repository",
+                inputSchema=GitPull.schema(),
+            ),
+            Tool(
+                name=GitTools.FETCH,
+                description="Fetches changes from a remote repository",
+                inputSchema=GitFetch.schema(),
             ),
         ]
 
@@ -285,6 +334,39 @@ async def serve(repository: Path | None) -> None:
 
             case GitTools.CHECKOUT:
                 result = git_checkout(repo, arguments["branch_name"])
+                return [TextContent(
+                    type="text",
+                    text=result
+                )]
+
+            case GitTools.PUSH:
+                result = git_push(
+                    repo,
+                    arguments.get("remote", "origin"),
+                    arguments.get("branch")
+                )
+                return [TextContent(
+                    type="text",
+                    text=result
+                )]
+
+            case GitTools.PULL:
+                result = git_pull(
+                    repo,
+                    arguments.get("remote", "origin"),
+                    arguments.get("branch")
+                )
+                return [TextContent(
+                    type="text",
+                    text=result
+                )]
+
+            case GitTools.FETCH:
+                result = git_fetch(
+                    repo,
+                    arguments.get("remote", "origin"),
+                    arguments.get("branch")
+                )
                 return [TextContent(
                     type="text",
                     text=result
