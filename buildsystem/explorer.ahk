@@ -82,6 +82,7 @@ OnGenerateClaudeConfig:
     SplitPath, A_LineFile,, GitRootDir
     SplitPath, GitRootDir,, GitRootDir
     ShiftPressed := GetKeyState("Shift","P")
+    StringReplace, MCPServersPath, GitRootDir, \, \\, All
     BatchScript =
     (
 
@@ -102,9 +103,13 @@ OnGenerateClaudeConfig:
             `(
             echo {
             echo   "mcpServers": {
+            echo     "git": {
+            echo       "command": "uvx",
+            echo       "args": ["mcp-server-git", "--repository", "%MCPServersPath%"]
+            echo     },
             echo     "github": {
             echo       "command": "node",
-            echo       "args": ["C:\\src\\dwf981@gh\\MCPServers\\src\\github\\dist\\index.js"],
+            echo       "args": ["%MCPServersPath%\\src\\github\\dist\\index.js"],
             echo       "env": {
             echo         "GITHUB_PERSONAL_ACCESS_TOKEN": "!GITHUB_PERSONAL_ACCESS_TOKEN!"
             echo       }
