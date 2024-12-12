@@ -98,6 +98,69 @@ Please note that mcp-server-git is currently in early development. The functiona
       - `branch` (string, optional): Branch to fetch
     - Returns: Confirmation of fetch operation
 
+14. `git_get_config`
+    - Returns the Git repository configuration
+    - Input:
+      - `repo_path` (string): Path to Git repository
+    - Returns: Contents of the repository's .git/config file
+
+15. `git_get_remote_url`
+    - Gets the URL of a specific remote
+    - Inputs:
+      - `repo_path` (string): Path to Git repository
+      - `remote` (string): Name of the remote (default: "origin")
+    - Returns: URL of the specified remote
+
+16. `git_list_remotes`
+    - Lists all configured remotes
+    - Input:
+      - `repo_path` (string): Path to Git repository
+    - Returns: List of remotes with their URLs
+
+17. `git_add_remote`
+    - Adds a new remote
+    - Inputs:
+      - `repo_path` (string): Path to Git repository
+      - `name` (string): Name for the new remote
+      - `url` (string): URL of the remote repository
+    - Returns: Confirmation of remote addition
+
+18. `git_remove_remote`
+    - Removes a remote
+    - Inputs:
+      - `repo_path` (string): Path to Git repository
+      - `name` (string): Name of the remote to remove
+    - Returns: Confirmation of remote removal
+
+19. `git_list_branches`
+    - Lists all local and remote branches
+    - Inputs:
+      - `repo_path` (string): Path to Git repository
+      - `remote` (boolean): Include remote branches (default: true)
+    - Returns: List of branches
+
+20. `git_delete_branch`
+    - Deletes a branch
+    - Inputs:
+      - `repo_path` (string): Path to Git repository
+      - `branch_name` (string): Name of branch to delete
+      - `force` (boolean): Force deletion (default: false)
+    - Returns: Confirmation of branch deletion
+
+21. `git_rename_branch`
+    - Renames a branch
+    - Inputs:
+      - `repo_path` (string): Path to Git repository
+      - `old_name` (string): Current name of the branch
+      - `new_name` (string): New name for the branch
+    - Returns: Confirmation of branch rename
+
+22. `git_get_current_branch`
+    - Gets the name of the current branch
+    - Input:
+      - `repo_path` (string): Path to Git repository
+    - Returns: Name of the current branch
+
 ## Installation
 
 ### Using uv (recommended)
