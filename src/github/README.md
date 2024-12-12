@@ -212,6 +212,19 @@ MCP Server for the GitHub API, enabling file operations, repository management, 
       - `sha` (optional string): SHA that pull request head must match
     - Returns: Merge result with SHA and status
 
+20. `create_pull_request_review_comment`
+    - Add a review comment to a specific line in a pull request
+    - Inputs:
+      - `owner` (string): Repository owner
+      - `repo` (string): Repository name
+      - `pull_number` (number): Pull request number
+      - `body` (string): The text of the review comment
+      - `commit_id` (string): The SHA of the commit to comment on
+      - `path` (string): The relative path to the file to comment on
+      - `line` (number): The line number in the file to comment on
+      - `side` (optional string): Side of the diff ('LEFT' for deletions, 'RIGHT' for additions)
+    - Returns: Created review comment details
+
 ## Search Query Syntax
 
 ### Code Search

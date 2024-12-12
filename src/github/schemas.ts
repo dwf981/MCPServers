@@ -711,6 +711,37 @@ export const MergeResultSchema = z.object({
   message: z.string()
 });
 
+// Add after MergeResultSchema
+export const CreatePullRequestReviewCommentSchema = z.object({
+  owner: z.string().describe("Repository owner (username or organization)"),
+  repo: z.string().describe("Repository name"),
+  pull_number: z.number().describe("Pull request number"),
+  body: z.string().describe("The text of the review comment"),
+  commit_id: z.string().describe("The SHA of the commit to comment on"),
+  path: z.string().describe("The relative path to the file to comment on"),
+  line: z.number().describe("The line number in the file to comment on"),
+  side: z.enum(['LEFT', 'RIGHT']).optional().describe("Side of the diff (LEFT for deletions, RIGHT for additions)")
+});
+
+export const PullRequestReviewCommentSchema = z.object({
+  id: z.number(),
+  node_id: z.string(),
+  pull_request_review_id: z.number(),
+  diff_hunk: z.string(),
+  path: z.string(),
+  position: z.number(),
+  original_position: z.number(),
+  commit_id: z.string(),
+  original_commit_id: z.string(),
+  body: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  html_url: z.string(),
+  pull_request_url: z.string(),
+  author_association: z.string(),
+  user: GitHubIssueAssigneeSchema
+});
+
 // Export types
 export type GitHubAuthor = z.infer<typeof GitHubAuthorSchema>;
 export type GitHubFork = z.infer<typeof GitHubForkSchema>;

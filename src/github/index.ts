@@ -62,6 +62,8 @@ import {
   ListRepositoryIssuesSchema,
   MergePullRequestOptionsSchema,
   MergeResultSchema,
+  CreatePullRequestReviewCommentSchema,
+  PullRequestReviewCommentSchema,
 } from './schemas.js';
 
 const server = new Server(
@@ -600,12 +602,20 @@ async function updateIssue(
 async function addIssueComment(
   owner: string,
   repo: string,
-  issueNumber: number,
+  issue_number: number,
   body: string
 ): Promise<z.infer<typeof IssueCommentSchema>> {
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/comments`,
-    {
+  console.error('Adding comment with params:', { owner, repo, issue_number, body });
+
+  if (!owner || !repo || !issue_number) {
+    throw new Error(`Missing required parameters: ${JSON.stringify({ owner, repo, issue_number })}`);
+  }
+
+  const url = `https://api.github.com/repos/${owner}/${repo}/issues/${issue_number}/comments`;
+  console.error('Request URL:', url);
+
+  try {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Authorization": `token ${GITHUB_PERSONAL_ACCESS_TOKEN}`,
@@ -614,14 +624,28 @@ async function addIssueComment(
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ body })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('GitHub API error response:', errorText);
+      throw new Error(`GitHub API error: ${response.statusText}\n${errorText}`);
     }
-  );
 
-  if (!response.ok) {
-    throw new Error(`GitHub API error: ${response.statusText}`);
+    const result: any = await response.json();
+    console.error('GitHub API success response:', result);
+    
+    // Return the raw result instead of parsing it through the schema
+    return {
+      owner,
+      repo,
+      issue_number,
+      body: result.body
+    };
+  } catch (error) {
+    console.error('Error in addIssueComment:', error);
+    throw error;
   }
-
-  return IssueCommentSchema.parse(await response.json());
 }
 
 async function searchCode(
@@ -782,6 +806,66 @@ async function mergePullRequest(
   return MergeResultSchema.parse(await response.json());
 }
 
+async function createPullRequestReviewComment(
+  owner: string,
+  repo: string,
+  pull_number: number,
+  body: string,
+  commit_id: string,
+  path: string,
+  line: number,
+  side?: 'LEFT' | 'RIGHT'
+): Promise<z.infer<typeof PullRequestReviewCommentSchema>> {
+  // If commit_id is HEAD, fetch the latest commit SHA from the PR
+  let actualCommitId = commit_id;
+  if (commit_id.toUpperCase() === 'HEAD') {
+    const pullResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/pulls/${pull_number}`,
+      {
+        headers: {
+          Authorization: `token ${GITHUB_PERSONAL_ACCESS_TOKEN}`,
+          Accept: "application/vnd.github.v3+json",
+          "User-Agent": "github-mcp-server",
+        },
+      }
+    );
+
+    if (!pullResponse.ok) {
+      throw new Error(`GitHub API error: Could not fetch pull request details - ${pullResponse.statusText}`);
+    }
+
+    const pullRequest = GitHubPullRequestSchema.parse(await pullResponse.json());
+    actualCommitId = pullRequest.head.sha;
+  }
+
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/pulls/${pull_number}/comments`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `token ${GITHUB_PERSONAL_ACCESS_TOKEN}`,
+        Accept: "application/vnd.github.v3+json",
+        "User-Agent": "github-mcp-server",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        body,
+        commit_id: actualCommitId,
+        path,
+        line,
+        side: side || 'RIGHT'
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`GitHub API error: ${response.statusText}\n${errorText}`);
+  }
+
+  return PullRequestReviewCommentSchema.parse(await response.json());
+}
+
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
@@ -883,6 +967,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: "merge_pull_request",
         description: "Merge a pull request",
         inputSchema: zodToJsonSchema(MergePullRequestOptionsSchema),
+      },
+      {
+        name: "create_pull_request_review_comment",
+        description: "Add a review comment to a specific line in a pull request",
+        inputSchema: zodToJsonSchema(CreatePullRequestReviewCommentSchema),
       },
     ],
   };
@@ -1066,10 +1155,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "add_issue_comment": {
-        const args = IssueCommentSchema.parse(request.params.arguments);
-        const { owner, repo, issue_number, body } = args;
-        const comment = await addIssueComment(owner, repo, issue_number, body);
-        return { toolResult: comment };
+        console.error('Received add_issue_comment request with params:', request.params.arguments);
+        
+        // Explicitly type and validate the arguments
+        const args = z.object({
+          owner: z.string(),
+          repo: z.string(),
+          issue_number: z.number(),
+          body: z.string()
+        }).parse(request.params.arguments);
+        
+        const comment = await addIssueComment(
+          args.owner,
+          args.repo,
+          args.issue_number,
+          args.body
+        );
+        
+        return {
+          content: [{ type: "text", text: JSON.stringify(comment, null, 2) }]
+        };
       }
 
       case "list_commits": {
@@ -1100,6 +1205,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { owner, repo, pull_number, ...options } = args;
         const result = await mergePullRequest(owner, repo, pull_number, options);
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      }
+
+      case "create_pull_request_review_comment": {
+        const args = CreatePullRequestReviewCommentSchema.parse(request.params.arguments);
+        const comment = await createPullRequestReviewComment(
+          args.owner,
+          args.repo,
+          args.pull_number,
+          args.body,
+          args.commit_id,
+          args.path,
+          args.line,
+          args.side
+        );
+        return {
+          content: [{ type: "text", text: JSON.stringify(comment, null, 2) }],
+        };
       }
 
       default:
