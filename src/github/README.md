@@ -188,42 +188,94 @@ MCP Server for the GitHub API, enabling file operations, repository management, 
      - `issue_number` (number): Issue number to retrieve
    - Returns: Github Issue object & details
 
-18. `list_repository_issues`
-    - List issues in a GitHub repository with optional filters
-    - Inputs:
-      - `owner` (string): Repository owner
-      - `repo` (string): Repository name
-      - `state` (optional string): Filter by state ('open', 'closed', 'all')
-      - `sort` (optional string): Sort by ('created', 'updated', 'comments')
-      - `direction` (optional string): Sort direction ('asc', 'desc')
-      - `per_page` (optional number): Results per page (max 100)
-      - `page` (optional number): Page number
-    - Returns: Array of issue details
+18. `get_pull_request`
+   - Get details of a specific pull request
+   - Inputs:
+     - `owner` (string): Repository owner
+     - `repo` (string): Repository name
+     - `pull_number` (number): Pull request number
+   - Returns: Pull request details including diff and review status
 
-19. `merge_pull_request`
-    - Merge a pull request
-    - Inputs:
-      - `owner` (string): Repository owner
-      - `repo` (string): Repository name
-      - `pull_number` (number): Pull request number to merge
-      - `commit_title` (optional string): Title for the merge commit
-      - `commit_message` (optional string): Additional commit message
-      - `merge_method` (optional string): Merge method ('merge', 'squash', 'rebase')
-      - `sha` (optional string): SHA that pull request head must match
-    - Returns: Merge result with SHA and status
+19. `list_pull_requests`
+   - List and filter repository pull requests
+   - Inputs:
+     - `owner` (string): Repository owner
+     - `repo` (string): Repository name
+     - `state` (optional string): Filter by state ('open', 'closed', 'all')
+     - `head` (optional string): Filter by head user/org and branch
+     - `base` (optional string): Filter by base branch
+     - `sort` (optional string): Sort by ('created', 'updated', 'popularity', 'long-running')
+     - `direction` (optional string): Sort direction ('asc', 'desc')
+     - `per_page` (optional number): Results per page (max 100)
+     - `page` (optional number): Page number
+   - Returns: Array of pull request details
 
-20. `create_pull_request_review_comment`
-    - Add a review comment to a specific line in a pull request
-    - Inputs:
-      - `owner` (string): Repository owner
-      - `repo` (string): Repository name
-      - `pull_number` (number): Pull request number
-      - `body` (string): The text of the review comment
-      - `commit_id` (string): The SHA of the commit to comment on
-      - `path` (string): The relative path to the file to comment on
-      - `line` (number): The line number in the file to comment on
-      - `side` (optional string): Side of the diff ('LEFT' for deletions, 'RIGHT' for additions)
-    - Returns: Created review comment details
+20. `create_pull_request_review`
+   - Create a review on a pull request
+   - Inputs:
+     - `owner` (string): Repository owner
+     - `repo` (string): Repository name
+     - `pull_number` (number): Pull request number
+     - `body` (string): Review comment text
+     - `event` (string): Review action ('APPROVE', 'REQUEST_CHANGES', 'COMMENT')
+     - `commit_id` (optional string): SHA of commit to review
+     - `comments` (optional array): Line-specific comments, each with:
+       - `path` (string): File path
+       - `position` (number): Line position in diff
+       - `body` (string): Comment text
+   - Returns: Created review details
+
+21. `merge_pull_request`
+   - Merge a pull request
+   - Inputs:
+     - `owner` (string): Repository owner
+     - `repo` (string): Repository name
+     - `pull_number` (number): Pull request number
+     - `commit_title` (optional string): Title for merge commit
+     - `commit_message` (optional string): Extra detail for merge commit
+     - `merge_method` (optional string): Merge method ('merge', 'squash', 'rebase')
+   - Returns: Merge result details
+
+22. `get_pull_request_files`
+   - Get the list of files changed in a pull request
+   - Inputs:
+     - `owner` (string): Repository owner
+     - `repo` (string): Repository name
+     - `pull_number` (number): Pull request number
+   - Returns: Array of changed files with patch and status details
+
+23. `get_pull_request_status`
+   - Get the combined status of all status checks for a pull request
+   - Inputs:
+     - `owner` (string): Repository owner
+     - `repo` (string): Repository name
+     - `pull_number` (number): Pull request number
+   - Returns: Combined status check results and individual check details
+
+24. `update_pull_request_branch`
+   - Update a pull request branch with the latest changes from the base branch (equivalent to GitHub's "Update branch" button)
+   - Inputs:
+     - `owner` (string): Repository owner
+     - `repo` (string): Repository name
+     - `pull_number` (number): Pull request number
+     - `expected_head_sha` (optional string): The expected SHA of the pull request's HEAD ref
+   - Returns: Success message when branch is updated
+
+25. `get_pull_request_comments`
+   - Get the review comments on a pull request
+   - Inputs:
+     - `owner` (string): Repository owner
+     - `repo` (string): Repository name
+     - `pull_number` (number): Pull request number
+   - Returns: Array of pull request review comments with details like the comment text, author, and location in the diff
+
+26. `get_pull_request_reviews`
+   - Get the reviews on a pull request
+   - Inputs:
+     - `owner` (string): Repository owner
+     - `repo` (string): Repository name
+     - `pull_number` (number): Pull request number
+   - Returns: Array of pull request reviews with details like the review state (APPROVED, CHANGES_REQUESTED, etc.), reviewer, and review body
 
 ## Search Query Syntax
 
@@ -262,6 +314,30 @@ For detailed search syntax, see [GitHub's searching documentation](https://docs.
 ### Usage with Claude Desktop
 To use this with Claude Desktop, add the following to your `claude_desktop_config.json`:
 
+#### Docker
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "mcp/github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"
+      }
+    }
+  }
+}
+```
+
+### NPX
+
 ```json
 {
   "mcpServers": {
@@ -277,6 +353,14 @@ To use this with Claude Desktop, add the following to your `claude_desktop_confi
     }
   }
 }
+```
+
+## Build
+
+Docker build:
+
+```bash
+docker build -t mcp/github -f src/github/Dockerfile .
 ```
 
 ## License

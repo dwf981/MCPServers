@@ -52,55 +52,11 @@ class GitCheckout(BaseModel):
     repo_path: str
     branch_name: str
 
-class GitPush(BaseModel):
+class GitShow(BaseModel):
     repo_path: str
-    remote: str = "origin"
-    branch: str | None = None
+    revision: str
 
-class GitPull(BaseModel):
-    repo_path: str
-    remote: str = "origin"
-    branch: str | None = None
-
-class GitFetch(BaseModel):
-    repo_path: str
-    remote: str = "origin"
-    branch: str | None = None
-
-class GitGetConfig(BaseModel):
-    repo_path: str
-
-class GitGetRemoteUrl(BaseModel):
-    repo_path: str
-    remote: str = "origin"
-
-class GitListRemotes(BaseModel):
-    repo_path: str
-
-class GitAddRemote(BaseModel):
-    repo_path: str
-    name: str
-    url: str
-
-class GitRemoveRemote(BaseModel):
-    repo_path: str
-    name: str
-
-class GitListBranches(BaseModel):
-    repo_path: str
-    remote: bool = True
-
-class GitDeleteBranch(BaseModel):
-    repo_path: str
-    branch_name: str
-    force: bool = False
-
-class GitRenameBranch(BaseModel):
-    repo_path: str
-    old_name: str
-    new_name: str
-
-class GitGetCurrentBranch(BaseModel):
+class GitInit(BaseModel):
     repo_path: str
 
 class GitTools(str, Enum):
@@ -114,18 +70,8 @@ class GitTools(str, Enum):
     LOG = "git_log"
     CREATE_BRANCH = "git_create_branch"
     CHECKOUT = "git_checkout"
-    PUSH = "git_push"
-    PULL = "git_pull"
-    FETCH = "git_fetch"
-    GET_CONFIG = "git_get_config"
-    GET_REMOTE_URL = "git_get_remote_url"
-    LIST_REMOTES = "git_list_remotes"
-    ADD_REMOTE = "git_add_remote"
-    REMOVE_REMOTE = "git_remove_remote"
-    LIST_BRANCHES = "git_list_branches"
-    DELETE_BRANCH = "git_delete_branch"
-    RENAME_BRANCH = "git_rename_branch"
-    GET_CURRENT_BRANCH = "git_get_current_branch"
+    SHOW = "git_show"
+    INIT = "git_init"
 
 def git_status(repo: git.Repo) -> str:
     return repo.git.status()
@@ -176,113 +122,30 @@ def git_checkout(repo: git.Repo, branch_name: str) -> str:
     repo.git.checkout(branch_name)
     return f"Switched to branch '{branch_name}'"
 
-def git_push(repo: git.Repo, remote: str = "origin", branch: str | None = None) -> str:
-    remote_obj = repo.remote(remote)
-    refspec = f"{branch}:{branch}" if branch else None
-    push_info = remote_obj.push(refspec=refspec)
-    return f"Push to {remote} successful"
-
-def git_pull(repo: git.Repo, remote: str = "origin", branch: str | None = None) -> str:
-    remote_obj = repo.remote(remote)
-    remote_obj.pull(refspec=branch)
-    return f"Pull from {remote} successful"
-
-def git_fetch(repo: git.Repo, remote: str = "origin", branch: str | None = None) -> str:
-    remote_obj = repo.remote(remote)
-    remote_obj.fetch(refspec=branch)
-    return f"Fetch from {remote} successful"
-
-def git_get_config(repo: git.Repo) -> str:
-    """Returns the contents of the repository's .git/config file."""
-    config_path = Path(repo.git_dir) / "config"  # Use Path for proper path joining
-    with open(config_path, "r") as f:
-        return f.read()
-
-def git_get_remote_url(repo: git.Repo, remote: str = "origin") -> str:
-    """Gets the URL of a specific remote."""
+def git_init(repo_path: str) -> str:
     try:
-        remote_obj = repo.remote(remote)
-        return next(remote_obj.urls)
-    except (git.exc.GitCommandError, StopIteration):
-        raise ValueError(f"Remote '{remote}' not found or has no URL configured")
+        repo = git.Repo.init(path=repo_path, mkdir=True)
+        return f"Initialized empty Git repository in {repo.git_dir}"
+    except Exception as e:
+        return f"Error initializing repository: {str(e)}"
 
-def git_list_remotes(repo: git.Repo) -> list[dict[str, str]]:
-    """Lists all configured remotes with their URLs."""
-    remotes = []
-    for remote in repo.remotes:
-        urls = list(remote.urls)
-        remotes.append({
-            "name": remote.name,
-            "urls": urls
-        })
-    return remotes
-
-def git_add_remote(repo: git.Repo, name: str, url: str) -> str:
-    """Adds a new remote."""
-    try:
-        remote = repo.create_remote(name, url)
-        return f"Remote '{name}' added successfully with URL: {url}"
-    except git.exc.GitCommandError as e:
-        raise ValueError(f"Failed to add remote: {e}")
-
-def git_remove_remote(repo: git.Repo, name: str) -> str:
-    """Removes a remote."""
-    try:
-        repo.delete_remote(name)
-        return f"Remote '{name}' removed successfully"
-    except git.exc.GitCommandError as e:
-        raise ValueError(f"Failed to remove remote: {e}")
-
-def git_list_branches(repo: git.Repo, remote: bool = True) -> list[dict[str, str]]:
-    """Lists all branches, optionally including remote branches."""
-    branches = []
-    
-    # Add local branches
-    for branch in repo.heads:
-        branches.append({
-            "name": branch.name,
-            "type": "local",
-            "commit": branch.commit.hexsha,
-            "is_active": branch.name == repo.active_branch.name
-        })
-    
-    # Add remote branches if requested
-    if remote:
-        for ref in repo.remote().refs:
-            if not ref.name.endswith('/HEAD'):  # Skip remote HEAD refs
-                branches.append({
-                    "name": ref.name,
-                    "type": "remote",
-                    "commit": ref.commit.hexsha,
-                    "is_active": False
-                })
-    
-    return branches
-
-def git_delete_branch(repo: git.Repo, branch_name: str, force: bool = False) -> str:
-    """Deletes a branch."""
-    try:
-        repo.delete_head(branch_name, force=force)
-        return f"Branch '{branch_name}' deleted successfully"
-    except git.exc.GitCommandError as e:
-        raise ValueError(f"Failed to delete branch: {e}")
-
-def git_rename_branch(repo: git.Repo, old_name: str, new_name: str) -> str:
-    """Renames a branch."""
-    try:
-        branch = repo.heads[old_name]
-        branch.rename(new_name)
-        return f"Branch renamed from '{old_name}' to '{new_name}' successfully"
-    except (IndexError, git.exc.GitCommandError) as e:
-        raise ValueError(f"Failed to rename branch: {e}")
-
-def git_get_current_branch(repo: git.Repo) -> str:
-    """Gets the name of the current branch."""
-    try:
-        return repo.active_branch.name
-    except TypeError:
-        # Handle detached HEAD state
-        return f"HEAD detached at {repo.head.commit.hexsha[:8]}"
+def git_show(repo: git.Repo, revision: str) -> str:
+    commit = repo.commit(revision)
+    output = [
+        f"Commit: {commit.hexsha}\n"
+        f"Author: {commit.author}\n"
+        f"Date: {commit.authored_datetime}\n"
+        f"Message: {commit.message}\n"
+    ]
+    if commit.parents:
+        parent = commit.parents[0]
+        diff = parent.diff(commit, create_patch=True)
+    else:
+        diff = commit.diff(git.NULL_TREE, create_patch=True)
+    for d in diff:
+        output.append(f"\n--- {d.a_path}\n+++ {d.b_path}\n")
+        output.append(d.diff.decode('utf-8'))
+    return "".join(output)
 
 async def serve(repository: Path | None) -> None:
     logger = logging.getLogger(__name__)
@@ -351,65 +214,15 @@ async def serve(repository: Path | None) -> None:
                 inputSchema=GitCheckout.schema(),
             ),
             Tool(
-                name=GitTools.PUSH,
-                description="Pushes changes to a remote repository",
-                inputSchema=GitPush.schema(),
+                name=GitTools.SHOW,
+                description="Shows the contents of a commit",
+                inputSchema=GitShow.schema(),
             ),
             Tool(
-                name=GitTools.PULL,
-                description="Pulls changes from a remote repository",
-                inputSchema=GitPull.schema(),
-            ),
-            Tool(
-                name=GitTools.FETCH,
-                description="Fetches changes from a remote repository",
-                inputSchema=GitFetch.schema(),
-            ),
-            Tool(
-                name=GitTools.GET_CONFIG,
-                description="Returns the Git repository configuration",
-                inputSchema=GitGetConfig.schema(),
-            ),
-            Tool(
-                name=GitTools.GET_REMOTE_URL,
-                description="Gets the URL of a specific remote",
-                inputSchema=GitGetRemoteUrl.schema(),
-            ),
-            Tool(
-                name=GitTools.LIST_REMOTES,
-                description="Lists all configured remotes",
-                inputSchema=GitListRemotes.schema(),
-            ),
-            Tool(
-                name=GitTools.ADD_REMOTE,
-                description="Adds a new remote",
-                inputSchema=GitAddRemote.schema(),
-            ),
-            Tool(
-                name=GitTools.REMOVE_REMOTE,
-                description="Removes a remote",
-                inputSchema=GitRemoveRemote.schema(),
-            ),
-            Tool(
-                name=GitTools.LIST_BRANCHES,
-                description="Lists all branches",
-                inputSchema=GitListBranches.schema(),
-            ),
-            Tool(
-                name=GitTools.DELETE_BRANCH,
-                description="Deletes a branch",
-                inputSchema=GitDeleteBranch.schema(),
-            ),
-            Tool(
-                name=GitTools.RENAME_BRANCH,
-                description="Renames a branch",
-                inputSchema=GitRenameBranch.schema(),
-            ),
-            Tool(
-                name=GitTools.GET_CURRENT_BRANCH,
-                description="Gets the name of the current branch",
-                inputSchema=GitGetCurrentBranch.schema(),
-            ),
+                name=GitTools.INIT,
+                description="Initialize a new Git repository",
+                inputSchema=GitInit.schema(),
+            )
         ]
 
     async def list_repos() -> Sequence[str]:
@@ -444,6 +257,16 @@ async def serve(repository: Path | None) -> None:
     @server.call_tool()
     async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         repo_path = Path(arguments["repo_path"])
+        
+        # Handle git init separately since it doesn't require an existing repo
+        if name == GitTools.INIT:
+            result = git_init(str(repo_path))
+            return [TextContent(
+                type="text",
+                text=result
+            )]
+            
+        # For all other commands, we need an existing repo
         repo = git.Repo(repo_path)
 
         match name:
@@ -521,112 +344,11 @@ async def serve(repository: Path | None) -> None:
                     text=result
                 )]
 
-            case GitTools.PUSH:
-                result = git_push(
-                    repo,
-                    arguments.get("remote", "origin"),
-                    arguments.get("branch")
-                )
+            case GitTools.SHOW:
+                result = git_show(repo, arguments["revision"])
                 return [TextContent(
                     type="text",
                     text=result
-                )]
-
-            case GitTools.PULL:
-                result = git_pull(
-                    repo,
-                    arguments.get("remote", "origin"),
-                    arguments.get("branch")
-                )
-                return [TextContent(
-                    type="text",
-                    text=result
-                )]
-
-            case GitTools.FETCH:
-                result = git_fetch(
-                    repo,
-                    arguments.get("remote", "origin"),
-                    arguments.get("branch")
-                )
-                return [TextContent(
-                    type="text",
-                    text=result
-                )]
-
-            case GitTools.GET_CONFIG:
-                config = git_get_config(repo)
-                return [TextContent(
-                    type="text",
-                    text=f"Git config:\n{config}"
-                )]
-
-            case GitTools.GET_REMOTE_URL:
-                url = git_get_remote_url(repo, arguments.get("remote", "origin"))
-                return [TextContent(
-                    type="text",
-                    text=f"Remote URL: {url}"
-                )]
-            
-            case GitTools.LIST_REMOTES:
-                remotes = git_list_remotes(repo)
-                return [TextContent(
-                    type="text",
-                    text="Configured remotes:\n" + 
-                         "\n".join(f"{r['name']}: {', '.join(r['urls'])}" for r in remotes)
-                )]
-            
-            case GitTools.ADD_REMOTE:
-                result = git_add_remote(repo, arguments["name"], arguments["url"])
-                return [TextContent(
-                    type="text",
-                    text=result
-                )]
-            
-            case GitTools.REMOVE_REMOTE:
-                result = git_remove_remote(repo, arguments["name"])
-                return [TextContent(
-                    type="text",
-                    text=result
-                )]
-            
-            case GitTools.LIST_BRANCHES:
-                branches = git_list_branches(repo, arguments.get("remote", True))
-                return [TextContent(
-                    type="text",
-                    text="Branches:\n" + "\n".join(
-                        f"{'* ' if b['is_active'] else '  '}{b['name']} ({b['type']}) - {b['commit'][:8]}"
-                        for b in branches
-                    )
-                )]
-            
-            case GitTools.DELETE_BRANCH:
-                result = git_delete_branch(
-                    repo, 
-                    arguments["branch_name"],
-                    arguments.get("force", False)
-                )
-                return [TextContent(
-                    type="text",
-                    text=result
-                )]
-            
-            case GitTools.RENAME_BRANCH:
-                result = git_rename_branch(
-                    repo,
-                    arguments["old_name"],
-                    arguments["new_name"]
-                )
-                return [TextContent(
-                    type="text",
-                    text=result
-                )]
-            
-            case GitTools.GET_CURRENT_BRANCH:
-                branch = git_get_current_branch(repo)
-                return [TextContent(
-                    type="text",
-                    text=f"Current branch: {branch}"
                 )]
 
             case _:
