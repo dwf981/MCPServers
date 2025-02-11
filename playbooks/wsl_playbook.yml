@@ -1,4 +1,4 @@
-# INPUT_VARIABLES: "BECOME_PASSWORD"
+# INPUT_VARIABLES: "ANSIBLE_BECOME_PASS"
 ---
 - name: Install
   hosts: localhost
