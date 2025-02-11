@@ -1,10 +1,21 @@
-# INPUT_VARIABLES: "ANSIBLE_BECOME_PASS"
+# INPUT_VARIABLES: "REPO_URL"
 ---
 - name: Install
   hosts: localhost
   connection: local
-  become: yes
+  vars:
+    repo_url: "{{ lookup('env', 'REPO_URL') }}"
+    repo_name: "{{ repo_url | regex_replace('.*\/([^/]+?)(\\.git)?$', '\\1') }}"
   tasks:
-    - name: Print Hello World
+    - name: Display repository info feedback
       debug:
-        msg: "Hello World!"
+        msg: |
+          Repository URL: {{ repo_url }}
+          Repository name: {{ repo_name }}
+          Home Directory: {{ ansible_env.HOME }}
+
+    - name: Clone or update repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ ansible_env.HOME }}/{{ repo_name }}"
+        update: yes
