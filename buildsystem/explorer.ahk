@@ -31,7 +31,7 @@
     AddMenu( "ProjectMenu", "Ge&nerate Claude Config...`tN", "OnGenerateClaudeConfig", ComSpec )
     AddMenu( "ProjectMenu" )
     AddMenu( "ProjectMenu", "&Sync with Upstream`tS", "OnSyncWithUpstream", ConEmuPath )
-    AddMenu( "ProjectMenu" )
+    AddLocalPlaybooksMenuItem("ProjectMenu")
     AddMenuItemEditProjectMenu("ProjectMenu")
     ShowMenu( "ProjectMenu" )
     ExitApp
