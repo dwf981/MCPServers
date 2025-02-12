@@ -6,7 +6,7 @@
 
     SetRegView 64
     RegRead, DeveloperDir, HKCU\Software\Developer, DeveloperDir
-    ProjectDir := GetProjectDir()
+    ProjectDir := GetProjectDir(0, -1, true)
     global BrowserPath
 
     if (A_Args.Length() > 0) {
@@ -31,6 +31,8 @@
     AddMenu( "ProjectMenu", "Ge&nerate Claude Config...`tN", "OnGenerateClaudeConfig", ComSpec )
     AddMenu( "ProjectMenu" )
     AddMenu( "ProjectMenu", "&Sync with Upstream`tS", "OnSyncWithUpstream", ConEmuPath )
+    AddMenu( "ProjectMenu" )
+    AddMenuItemEditProjectMenu( "ProjectMenu" )
     ShowMenu("ProjectMenu")
     ExitApp
 return ; end of script's auto-execute section
@@ -40,7 +42,7 @@ MenuHandler:
 return
 
 OnSyncWithUpstream:
-    ProjectDir := GetProjectDir()
+    ProjectDir := GetProjectDir(0, -1, true)
     SyncWithUpstream(ProjectDir, "https://github.com/modelcontextprotocol/servers.git")
 return
 
