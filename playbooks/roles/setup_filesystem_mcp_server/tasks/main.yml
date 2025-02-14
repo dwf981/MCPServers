@@ -1,0 +1,14 @@
+---
+- name: Install dependencies and build Filesystem MCP Server project
+  shell: |
+    if [ ! -f "{{ repo_dest }}/src/filesystem/dist/index.js" ]; then
+      echo "Installing dependencies for Filesystem MCP Server project..."
+      cd "{{ repo_dest }}/src/filesystem" || exit 1
+      pnpm install || exit 1
+      pnpm run build || exit 1
+      echo "Filesystem MCP Server built successfully."
+    else
+      echo "Filesystem MCP Server already built."
+    fi
+  args:
+    executable: /bin/bash 

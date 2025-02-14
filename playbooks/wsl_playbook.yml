@@ -26,3 +26,6 @@
     - install_node
     - setup_github_mcp_server
     - setup_mcp_server_git
+    - setup_everything_mcp_server
+    - setup_puppeteer_mcp_server
+    - setup_filesystem_mcp_server

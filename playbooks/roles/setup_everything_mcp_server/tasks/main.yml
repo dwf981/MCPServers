@@ -1,0 +1,14 @@
+---
+- name: Install Everything MCP Server dependencies and build the project
+  shell: |
+    if [ ! -f "{{ repo_dest }}/src/everything/dist/index.js" ]; then
+      echo "Installing dependencies for Everything MCP Server project..."
+      cd "{{ repo_dest }}/src/everything" || exit 1
+      pnpm install || exit 1
+      pnpm run build || exit 1
+      echo "Everything MCP Server built successfully."
+    else
+      echo "Everything MCP Server already built."
+    fi
+  args:
+    executable: /bin/bash 
