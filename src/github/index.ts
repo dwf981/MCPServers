@@ -307,7 +307,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "add_issue_comment": {
         const args = issues.IssueCommentSchema.parse(request.params.arguments);
         const { owner, repo, issue_number, body } = args;
-        const result = await issues.addIssueComment(owner, repo, issue_number, body);
+        const result = await issues.addIssueComment(owner, repo, issue_number, String(body));
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };

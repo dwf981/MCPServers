@@ -97,6 +97,8 @@ return
 OnGitHubServer:
     SplitPath, A_LineFile,, GitRootDir
     SplitPath, GitRootDir,, GitRootDir
+    RunBash({ Visible: "ConEmu" }, "", "node /home/ubuntu/MCPServers/src/github/dist/index.js", "", 1, 1)
+    return
     ShiftPressed := GetKeyState("Shift","P")
     BatchScript =
     (
@@ -133,6 +135,8 @@ return
 OnLocalGit:
     SplitPath, A_LineFile,, GitRootDir
     SplitPath, GitRootDir,, GitRootDir
+    RunBash({ Visible: "ConEmu" }, "", "source /home/ubuntu/MCPServers/src/git/.venv/bin/activate && echo Git MCP Server running && mcp-server-git -r /home/ubuntu/MCPServers", "", 1, 1)
+    return
     ShiftPressed := GetKeyState("Shift","P")
     BatchScript =
     (
