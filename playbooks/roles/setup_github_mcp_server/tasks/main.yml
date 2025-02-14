@@ -1,0 +1,14 @@
+---
+- name: Install Node dependencies and build GitHub MCP Server Node project
+  shell: |
+    if [ ! -f "{{ repo_dest }}/src/github/dist/index.js" ]; then
+      echo "Installing dependencies for Node project..."
+      cd "{{ repo_dest }}/src/github" || exit 1
+      pnpm install || exit 1
+      pnpm run build || exit 1
+      echo "Node project built successfully."
+    else
+      echo "Node project already built."
+    fi
+  args:
+    executable: /bin/bash 

@@ -1,0 +1,16 @@
+---
+- name: Set up Python virtual environment and install mcp-server-git
+  shell: |
+    if [ ! -f "{{ repo_dest }}/src/git/.venv/bin/activate" ]; then
+      echo "Setting up Python virtual environment for mcp-server-git..."
+      cd "{{ repo_dest }}/src/git" || exit 1
+      python3 -m venv .venv || exit 1
+      source .venv/bin/activate || exit 1
+      pip install -e . || exit 1
+      deactivate
+      echo "Python environment setup complete."
+    else
+      echo "Python virtual environment already exists."
+    fi
+  args:
+    executable: /bin/bash 

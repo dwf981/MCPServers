@@ -1,5 +1,4 @@
 # INPUT_VARIABLES: "REPO_URL"
----
 - name: Install projects on Ubuntu
   hosts: localhost
   connection: local
@@ -9,7 +8,7 @@
     repo_name: "{{ repo_url | regex_replace('.*\/([^/]+?)(\\.git)?$', '\\1') }}"
     repo_dest: "{{ ansible_env.HOME }}/{{ repo_name }}"
 
-  tasks:
+  pre_tasks:
     - name: Display repository info feedback
       debug:
         msg: |
@@ -23,65 +22,7 @@
         dest: "{{ repo_dest }}"
         update: yes
 
-    - name: Install nvm and Node LTS version if needed
-      shell: |
-        export NVM_DIR="$HOME/.nvm"
-        # Source nvm if already installed
-        if [ -s "$NVM_DIR/nvm.sh" ]; then
-          . "$NVM_DIR/nvm.sh"
-        fi
-
-        # Install nvm if it is not available
-        if ! command -v nvm &>/dev/null; then
-          echo "nvm not found, installing nvm..."
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-          # Source nvm after installation
-          . "$NVM_DIR/nvm.sh"
-        fi
-
-        # Check if node is installed; if not, install LTS version
-        if ! command -v node &>/dev/null; then
-          echo "Node not found, installing LTS version of Node..."
-          nvm install --lts
-          source ~/.bashrc
-        else
-          echo "Node is already installed: $(node --version)"
-        fi
-
-        if ! command -v pnpm &>/dev/null; then
-          echo "pnpm not found, installing pnpm..."
-          npm install -g pnpm
-        else
-          echo "pnpm is already installed: $(pnpm --version)"
-        fi
-      args:
-        executable: /bin/bash
-
-    - name: Install dependencies, build Node project, and run index.js
-      shell: |
-        if [ ! -f "{{ repo_dest }}/src/github/dist/index.js" ]; then
-          echo "Installing dependencies ..."
-          cd "{{ repo_dest }}/src/github" || exit 1
-          pnpm install || exit 1
-          cd "{{ repo_dest }}/src/github" || exit 1
-          pnpm run build || exit 1
-          echo ""
-        fi
-      args:
-        executable: /bin/bash
-      when: true
-
-    - name: Set up Python virtual environment and run mcp-server-git
-      shell: |
-        if [ ! -f "{{ repo_dest }}/src/git/.venv/bin/activate" ]; then
-          echo "Installing Python dependencies for mcp-server-git ..."
-          cd "{{ repo_dest }}/src/git" || exit 1
-          python3 -m venv .venv || exit 1
-          source .venv/bin/activate || exit 1
-          pip install -e . || exit 1
-          deactivate
-          echo ""
-        fi
-      args:
-        executable: /bin/bash
-      when: true
+  roles:
+    - install_node
+    - setup_github_mcp_server
+    - setup_mcp_server_git

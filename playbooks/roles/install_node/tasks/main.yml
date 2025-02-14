@@ -1,0 +1,34 @@
+---
+- name: Install nvm and Node LTS version if needed
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    # Source nvm if already installed
+    if [ -s "$NVM_DIR/nvm.sh" ]; then
+      . "$NVM_DIR/nvm.sh"
+    fi
+
+    # Install nvm if it is not available
+    if ! command -v nvm &>/dev/null; then
+      echo "nvm not found, installing nvm..."
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+      . "$NVM_DIR/nvm.sh"
+    fi
+
+    # Check if node is installed; if not, install LTS version
+    if ! command -v node &>/dev/null; then
+      echo "Node not found, installing LTS version of Node..."
+      nvm install --lts
+      source ~/.bashrc
+    else
+      echo "Node is already installed: $(node --version)"
+    fi
+
+    # Check and install pnpm if needed
+    if ! command -v pnpm &>/dev/null; then
+      echo "pnpm not found, installing pnpm..."
+      npm install -g pnpm
+    else
+      echo "pnpm is already installed: $(pnpm --version)"
+    fi
+  args:
+    executable: /bin/bash 
