@@ -21,6 +21,7 @@
         repo: "{{ repo_url }}"
         dest: "{{ repo_dest }}"
         update: yes
+        force: yes
 
   roles:
     - install_node
