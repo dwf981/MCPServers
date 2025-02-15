@@ -4,8 +4,9 @@
     if [ ! -f "{{ repo_dest }}/src/everything/dist/index.js" ]; then
       echo "Installing dependencies for Everything MCP Server project..."
       cd "{{ repo_dest }}/src/everything" || exit 1
-      pnpm install || exit 1
-      pnpm run build || exit 1
+      npm install || exit 1
+      npm run build || exit 1
+      npm install -g . || exit 1
       echo "Everything MCP Server built successfully."
     else
       echo "Everything MCP Server already built."

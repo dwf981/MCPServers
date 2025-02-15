@@ -4,8 +4,9 @@
     if [ ! -f "{{ repo_dest }}/src/github/dist/index.js" ]; then
       echo "Installing dependencies for Node project..."
       cd "{{ repo_dest }}/src/github" || exit 1
-      pnpm install || exit 1
-      pnpm run build || exit 1
+      npm install || exit 1
+      npm run build || exit 1
+      npm install -g . || exit 1
       echo "Node project built successfully."
     else
       echo "Node project already built."

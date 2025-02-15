@@ -4,11 +4,12 @@
     if [ ! -f "{{ repo_dest }}/src/puppeteer/dist/index.js" ]; then
       echo "Installing dependencies for Puppeteer MCP Server project..."
       cd "{{ repo_dest }}/src/puppeteer" || exit 1
-      pnpm install || exit 1
-      pnpm run build || exit 1
+      npm install || exit 1
+      npm run build || exit 1
+      npm install -g . || exit 1
       echo "Puppeteer MCP Server built successfully."
     else
       echo "Puppeteer MCP Server already built."
     fi
   args:
-    executable: /bin/bash 
+    executable: /bin/bash
