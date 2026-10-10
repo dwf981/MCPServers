@@ -9,13 +9,7 @@
     ProjectDir := GetProjectDir(0, -1, true)
     global BrowserPath
 
-    if (A_Args.Length() > 0) {
-        label := A_Args[1]
-        if IsLabel(label) {
-            Gosub %label%
-        }
-        ExitApp
-    }
+    CliDispatch()
 
     ; Project Menu
     AddMenuItemEditor("ProjectMenu")
