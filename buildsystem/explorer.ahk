@@ -4,11 +4,12 @@
 
     AuxLibLoad()
 
-    global BrowserPath
-
-    Cli_Dispatch()
-
+    ScriptInit()
+    {
+        Global
+    }
     ; Project Menu
+
     AddMenuItemEditor("ProjectMenu")
     AddMenu( "ProjectMenu" )
     AddMenu( "ProjectMenu", "&README.md...`tR", "OnReadme", BrowserPath )
