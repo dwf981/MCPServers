@@ -1,4 +1,4 @@
-#SingleInstance, Force
+#SingleInstance Off
 #NoTrayIcon
 #Include <AuxLib>
 
@@ -9,7 +9,7 @@
     ProjectDir := GetProjectDir(0, -1, true)
     global BrowserPath
 
-    CliDispatch()
+    Cli_Dispatch()
 
     ; Project Menu
     AddMenuItemEditor("ProjectMenu")
