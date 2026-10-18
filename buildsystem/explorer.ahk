@@ -4,9 +4,6 @@
 
     AuxLibLoad()
 
-    SetRegView 64
-    RegRead, DeveloperDir, HKCU\Software\Developer, DeveloperDir
-    ProjectDir := GetProjectDir(0, -1, true)
     global BrowserPath
 
     Cli_Dispatch()
