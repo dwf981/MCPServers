@@ -83,7 +83,7 @@ OnGenerateClaudeConfig:
         `)
         echo.
     )
-    RunBat({ Visible: "cmd", Pause: true, Admin: false, UseReadPassword: true, Colors: true }, StripBat(BatchScript))
+    Run_Bat({ Visible: "cmd", Pause: true, Admin: false, UseReadPassword: true, Colors: true }, StripBat(BatchScript))
 return
 
 OnGitHubServer:
@@ -115,7 +115,7 @@ OnGitHubServer:
         node dist\index.js
     )
     Options := { Visible: "ConEmu", Pause: true, Admin: true, Colors: true }
-    RunBat( Options, StripBat(BatchScript) )
+    Run_Bat( Options, StripBat(BatchScript) )
 return
 
 OnGitHubReadme:
@@ -154,7 +154,7 @@ OnLocalGit:
         mcp-server-git -r ..\..
     )
     Options := { Visible: "ConEmu", Pause: true, Admin: true, Colors: true }
-    RunBat( Options, StripBat(BatchScript) )
+    Run_Bat( Options, StripBat(BatchScript) )
 return
 
 OnLocalGitReadme:
