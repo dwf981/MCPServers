@@ -9,6 +9,7 @@
             "request": "launch",
             "name": "Attach to explorer.ahk",
             "program": "${workspaceFolder}/buildsystem/explorer.ahk",
+            "runtime": "C:\\Program Files\\AutoHotkey\\v2\\AutoHotkey64.exe",
             "stopOnEntry": true
         }
     ]
